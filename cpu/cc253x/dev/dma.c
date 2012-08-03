@@ -45,7 +45,7 @@ dma_init(void)
   DMA1CFGL = tmp_ptr;
 #endif
 
-  IEN1_DMAIE = 1;	/* Enable DMA interrupts */
+  DMAIE = 1;	/* Enable DMA interrupts */
 }
 /*---------------------------------------------------------------------------*/
 /*
@@ -61,7 +61,7 @@ dma_associate_process(struct process * p, uint8_t c)
 
   if(p) {
     dma_conf[c].inc_prio |= 8; /* Enable interrupt generation */
-    IEN1_DMAIE = 1; /* Make sure DMA interrupts are acknowledged */
+    DMAIE = 1; /* Make sure DMA interrupts are acknowledged */
   }
   dma_callback[c] = p;
 }
