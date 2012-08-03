@@ -91,13 +91,18 @@ else
   c_seg =
 endif 
 
+ifeq ($(HAVE_USB),1)
+  include $(CONTIKI_CPU)/dev/usb/Makefile.usb
+  CONTIKI_SOURCEFILES += $(USB)
+endif
+
 ### CPU-dependent cleanup files
 CLEAN += *.lnk *.lk *.sym *.lib *.ihx *.rel *.mem *.rst *.asm *.hex
 CLEAN += *.omf *.cdb *.banks *.flags *.banked-hex
 CLEAN += symbols.c symbols.h
 
 ### CPU-dependent directories
-CONTIKI_CPU_DIRS = . dev
+CONTIKI_CPU_DIRS += . dev
 
 ### CPU-dependent source files
 CONTIKI_SOURCEFILES += soc.c clock.c
@@ -105,6 +110,10 @@ CONTIKI_SOURCEFILES += uart0.c uart1.c uart-intr.c
 CONTIKI_SOURCEFILES += dma.c dma_intr.c
 CONTIKI_SOURCEFILES += cc2530-rf.c
 CONTIKI_SOURCEFILES += watchdog.c rtimer-arch.c
+CONTIKI_SOURCEFILES += p2-intr.c
+ifdef HAVE_USB
+CONTIKI_SOURCEFILES += usb-arch.c
+endif
 CONTIKI_ASMFILES +=
 
 CONTIKI_ASMOBJECTFILES = $(addprefix $(OBJECTDIR)/,$(CONTIKI_ASMFILES:.S=.rel))

@@ -1,0 +1,31 @@
+### Put generated sources in a separate directory
+BUILTSRCDIR = src_$(TARGET)
+ifeq (${wildcard $(BUILTSRCDIR)},)
+  DUMMY := ${shell mkdir $(BUILTSRCDIR)}
+endif
+
+STRUCTGEN = structgen
+
+PROJECTDIRS += $(BUILTSRCDIR)
+
+USB_STRING_DESCRIPTORS ?= $(CONTIKI_CPU)/dev/usb/cdc-acm/cdc-acm-string-descriptors.xml
+CONTIKI_CPU_DIRS += dev/usb
+
+XMLDIRS=
+
+USB = usb-arch.c usb-core.c
+
+ifdef USB_CDC_ACM_CLASS
+CONTIKI_CPU_DIRS += dev/usb/cdc-acm
+USB += cdc-acm.c cdc-acm-descriptors.c
+XMLDIRS += $(CONTIKI_CPU)/dev/usb/cdc-acm/
+endif
+
+vpath %.xml $(XMLDIRS)
+vpath %.gen.c $(STRUCTGENDIRS)
+
+%.c: %.xml
+	xsltproc $(CONTIKI_CPU)/dev/usb/string-descriptors.xslt $^ >$@
+
+%-consts.c: %.gen.c 
+	$(CPP) -I$(CFLAGS) $< | $(STRUCTGEN) --output $(BUILTSRCDIR)/$*-consts.c

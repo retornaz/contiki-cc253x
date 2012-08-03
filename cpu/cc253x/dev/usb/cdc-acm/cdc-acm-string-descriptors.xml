@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+  <descriptors>
+  <languages>
+    <lang id="en">0x0409</lang>
+    <lang id="fr">0x040c</lang>
+  </languages>
+  <strings>
+    <string> <!-- 1 -->
+      <lang>EPFL</lang>
+    </string>
+    <string> <!-- 2 -->
+      <lang>CC2531 Proto</lang>
+    </string>
+    <string> <!-- 3 -->
+      <lang>0.1</lang>
+    </string>
+ </strings>
+  </descriptors>
