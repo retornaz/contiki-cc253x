@@ -38,6 +38,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "sfr-bits.h"
 #include "port.h"
 
+#include "dma.h"
+
 // P1_0
 #define USB_PULLUP_PORT 	1
 #define USB_PULLUP_PIN		0
@@ -248,18 +250,84 @@ unsigned int usb_get_ep_events(uint8_t addr) {
 	
 	return e;
 }
+#if DMA_ON
+#ifndef USB_DMA_CHANNEL
+#error You must set USB_DMA_CHANNEL to a valid dma channel.
+#endif
+static void read_hw_buffer_dma(uint8_t tl, uint8_t th, uint8_t __xdata * xptr, unsigned int len) {
+	dma_conf[USB_DMA_CHANNEL].src_h = ((uint16_t) xptr) >> 8;
+	dma_conf[USB_DMA_CHANNEL].src_l = ((uint16_t) xptr) & 0xFF;
+	dma_conf[USB_DMA_CHANNEL].dst_h = th;
+	dma_conf[USB_DMA_CHANNEL].dst_l = tl;
+	
+	// Maximum USB len transfert is 512bytes, maximum DMA len: 4096, we are safe.
+	dma_conf[USB_DMA_CHANNEL].len_h = len >> 8;
+	dma_conf[USB_DMA_CHANNEL].len_l = len & 0xFF;
+	dma_conf[USB_DMA_CHANNEL].wtt = DMA_T_NONE | DMA_BLOCK;
+	// Maximum prio, we will be polling until the transfert is done.
+	dma_conf[USB_DMA_CHANNEL].inc_prio = DMA_SRC_INC_NO | DMA_DST_INC_1 | DMA_PRIO_HIGHEST;
 
+	DMA_ARM(USB_DMA_CHANNEL);
+	// Wait until the channel is armed
+	while(!(DMAARM & (1 << USB_DMA_CHANNEL)));
+
+	DMA_TRIGGER(USB_DMA_CHANNEL);
+	// Wait until the transfert is done.
+	while(DMA_STATUS(USB_DMA_CHANNEL));
+
+	// Clear interrupt flag
+	DMAIRQ &= ~(1 << USB_DMA_CHANNEL);
+}
+static void write_hw_buffer_dma(uint8_t __xdata * xptr, uint8_t fl, uint8_t fh, unsigned int len) {
+	dma_conf[USB_DMA_CHANNEL].src_h = fh;
+	dma_conf[USB_DMA_CHANNEL].src_l = fl;
+	dma_conf[USB_DMA_CHANNEL].dst_h = ((uint16_t) xptr) >> 8;
+	dma_conf[USB_DMA_CHANNEL].dst_l = ((uint16_t) xptr) & 0xFF;
+	
+	// Maximum USB len transfert is 512bytes, maximum DMA len: 4096, we are safe.
+	dma_conf[USB_DMA_CHANNEL].len_h = len >> 8;
+	dma_conf[USB_DMA_CHANNEL].len_l = len & 0xFF;
+	dma_conf[USB_DMA_CHANNEL].wtt = DMA_T_NONE | DMA_BLOCK;
+	// Maximum prio, we will be polling until the transfert is done.
+	dma_conf[USB_DMA_CHANNEL].inc_prio = DMA_SRC_INC_1 | DMA_DST_INC_NO | DMA_PRIO_HIGHEST;
+
+	DMA_ARM(USB_DMA_CHANNEL);
+	// Wait until the channel is armed
+	while(!(DMAARM & (1 << USB_DMA_CHANNEL)));
+
+	DMA_TRIGGER(USB_DMA_CHANNEL);
+	// Wait until the transfert is done.
+	while(DMA_STATUS(USB_DMA_CHANNEL));
+	
+	// Clear interrupt flag
+	DMAIRQ &= ~(1 << USB_DMA_CHANNEL);
+}
+
+#endif
 static void read_hw_buffer(uint8_t * to, uint8_t hw_ep, unsigned int len) {
-	// FIXME: Do this with the dma ... 
-	uint8_t * from = &USBF0 + (hw_ep << 1);
+	__xdata uint8_t * from = &USBF0 + (hw_ep << 1);
+#if DMA_ON
+	// For small transfers we use PIO
+	// This check is specific to SDCC and large/huge memory model
+	if(len > 8 && ((uint8_t*) &to)[2] == 0x0 /* x data pointer */) {
+		read_hw_buffer_dma(((uint8_t*) &to)[0], ((uint8_t*) &to)[1], from, len);
+		return;
+	}
+#endif
 	while(len--) {
 		*to++ = *from;
 	}
 }
 
 static void write_hw_buffer(uint8_t hw_ep, uint8_t * from, unsigned int len) {
-	// FIXME: Do this with the dma ...
-	uint8_t * to = &USBF0 + (hw_ep << 1);
+	__xdata uint8_t * to = &USBF0 + (hw_ep << 1);
+#if DMA_ON
+	// For small transfers we use PIO
+	if(len > 8 && ((uint8_t*) &from)[2] == 0x0 /* x data pointer */) {
+		write_hw_buffer_dma(to,((uint8_t*) &from)[0], ((uint8_t*) &from)[1],len);
+		return;
+	}
+#endif
 	while(len--) {
 		*to = *from++;
 	}
