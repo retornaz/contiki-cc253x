@@ -265,7 +265,7 @@ static void read_hw_buffer_dma(uint8_t tl, uint8_t th, uint8_t __xdata * xptr, u
 	dma_conf[USB_DMA_CHANNEL].len_l = len & 0xFF;
 	dma_conf[USB_DMA_CHANNEL].wtt = DMA_T_NONE | DMA_BLOCK;
 	// Maximum prio, we will be polling until the transfert is done.
-	dma_conf[USB_DMA_CHANNEL].inc_prio = DMA_SRC_INC_NO | DMA_DST_INC_1 | DMA_PRIO_HIGHEST;
+	dma_conf[USB_DMA_CHANNEL].inc_prio = DMA_SRC_INC_NO | DMA_DST_INC_1 | DMA_PRIO_HIGH;
 
 	DMA_ARM(USB_DMA_CHANNEL);
 	// Wait until the channel is armed
@@ -273,10 +273,11 @@ static void read_hw_buffer_dma(uint8_t tl, uint8_t th, uint8_t __xdata * xptr, u
 
 	DMA_TRIGGER(USB_DMA_CHANNEL);
 	// Wait until the transfert is done.
-	while(DMA_STATUS(USB_DMA_CHANNEL));
-
+	// For some unknown reason, the DMA channel do not set the IRQ flag
+	// sometimes, so use the DMAARM bit to check if transfert is done
+	while(DMAARM & (1 << USB_DMA_CHANNEL));
 	// Clear interrupt flag
-	DMAIRQ &= ~(1 << USB_DMA_CHANNEL);
+	DMAIRQ = ~(1 << USB_DMA_CHANNEL);
 }
 static void write_hw_buffer_dma(uint8_t __xdata * xptr, uint8_t fl, uint8_t fh, unsigned int len) {
 	dma_conf[USB_DMA_CHANNEL].src_h = fh;
@@ -289,7 +290,7 @@ static void write_hw_buffer_dma(uint8_t __xdata * xptr, uint8_t fl, uint8_t fh, 
 	dma_conf[USB_DMA_CHANNEL].len_l = len & 0xFF;
 	dma_conf[USB_DMA_CHANNEL].wtt = DMA_T_NONE | DMA_BLOCK;
 	// Maximum prio, we will be polling until the transfert is done.
-	dma_conf[USB_DMA_CHANNEL].inc_prio = DMA_SRC_INC_1 | DMA_DST_INC_NO | DMA_PRIO_HIGHEST;
+	dma_conf[USB_DMA_CHANNEL].inc_prio = DMA_SRC_INC_1 | DMA_DST_INC_NO | DMA_PRIO_HIGH;
 
 	DMA_ARM(USB_DMA_CHANNEL);
 	// Wait until the channel is armed
@@ -297,10 +298,10 @@ static void write_hw_buffer_dma(uint8_t __xdata * xptr, uint8_t fl, uint8_t fh, 
 
 	DMA_TRIGGER(USB_DMA_CHANNEL);
 	// Wait until the transfert is done.
-	while(DMA_STATUS(USB_DMA_CHANNEL));
+	while(DMAARM & (1 << USB_DMA_CHANNEL));
 	
 	// Clear interrupt flag
-	DMAIRQ &= ~(1 << USB_DMA_CHANNEL);
+	DMAIRQ = ~(1 << USB_DMA_CHANNEL);
 }
 
 #endif
