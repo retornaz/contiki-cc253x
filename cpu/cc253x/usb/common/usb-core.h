@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-struct USB_request_st usb_setup_buffer;
+extern struct USB_request_st usb_setup_buffer;
 
 void
 usb_send_ctrl_response(const uint8_t *data, unsigned int len);
