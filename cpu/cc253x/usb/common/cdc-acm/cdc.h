@@ -200,7 +200,7 @@ struct usb_cdc_ethernet_func_descriptor
   Uint32 bmEthernetStatistics;	/* Supported statistics */
   Uint16 wMaxSegmentSize;
   Uint16 wNumberMCFilters;	/* Number of multicast filters */
-  Uchar  bNumberPowerFilters;	/* Number of wake-up pattern filters */;
+  Uchar  bNumberPowerFilters;	/* Number of wake-up pattern filters */
 } BYTE_ALIGNED;
 
 struct usb_cdc_line_coding
