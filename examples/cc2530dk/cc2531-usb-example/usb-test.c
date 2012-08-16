@@ -185,7 +185,7 @@ do_work(void)
      && !(data_rx_urb.flags & USB_BUFFER_SUBMITTED)) {
     if(data_rx_urb.flags & USB_BUFFER_FAILED) {
       printf("URB Failed\n");
-      // Failed,  requeue it ... 
+      // Failed,  requeue it ...
       queue_rx_urb();
     } else {
       // if TX urb is idle
