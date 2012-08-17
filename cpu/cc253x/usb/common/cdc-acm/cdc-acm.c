@@ -6,6 +6,8 @@
 
 static uint8_t usb_ctrl_data_buffer[32];
 
+static uint8_t usb_line_coding[7] = {0x80, 0x25, 0x00, 0x00, 0x00, 0x00, 0x08}; // 9600 baud, 8N1
+
 static void
 encapsulated_command(uint8_t *data, unsigned int length)
 {
@@ -26,6 +28,7 @@ set_line_encoding(uint8_t *data, unsigned int length)
 			     ? "?" : stop_bits_str[coding->bCharFormat]);
     printf("Got CDC line coding: %ld/%d/%c/%s\n",
 	       coding->dwDTERate, coding->bDataBits, parity, stop_bits);
+    memcpy(usb_line_coding, data, 7);
     usb_send_ctrl_status();
   } else {
     usb_error_stall();
@@ -84,6 +87,9 @@ handle_cdc_acm_requests()
     case GET_ENCAPSULATED_RESPONSE:
       printf("CDC response");
       usb_send_ctrl_status();
+      return 1;
+    case GET_LINE_CODING:
+      usb_send_ctrl_response(usb_line_coding, 7);
       return 1;
     }
   }
