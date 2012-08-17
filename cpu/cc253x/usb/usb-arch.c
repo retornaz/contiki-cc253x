@@ -414,7 +414,9 @@ usb_submit_recv_buffer(uint8_t addr, USBBuffer * buffer)
     // but the USB hardware is catching them, thus ignore this.
     // FIXME: Use the interrupt to release this buffer when the packet is sent
     // at least the timing would be better ... 
-    notify_ep_process(ep, USB_EP_EVENT_NOTIFICATION);
+    if(buffer->flags & USB_BUFFER_NOTIFY) {
+      notify_ep_process(ep, USB_EP_EVENT_NOTIFICATION);
+    }
     return;
   }
 
@@ -987,9 +989,10 @@ ep0_get_data_pkt(void)
   res = fill_buffers(buffer, 0, len, short_packet);
 
   if(short_packet) {
-    USBCS0 |= USBCS0_CLR_OUTPKT_RDY | USBCS0_DATA_END;
+    /* The usb-core will send a status packet, we will release the fifo at this stage */
     ep0status = EP_IDLE;
   } else {
+    // More data to come
     USBCS0 |= USBCS0_CLR_OUTPKT_RDY;
   }
   return res;
@@ -1054,7 +1057,9 @@ ep0_tx(void)
   }
   usb_endpoints[0].buffer = buffer;
 
-  if(data_end) {
+  // Workaround the fact that the usb controller do not like to have DATA_END set after INPKT_RDY 
+  // for the last packet. Thus if no more is in the queue set DATA_END.
+  if(data_end || !buffer) {
     ep0status = EP_IDLE;
     USBCS0 |= USBCS0_INPKT_RDY | USBCS0_DATA_END;
   } else {
