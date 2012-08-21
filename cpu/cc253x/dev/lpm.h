@@ -48,6 +48,9 @@
 #define LPM_MODE_IDLE 1 /* Set MCU Idle as part of the main loop */
 #define LPM_MODE_PM2  2 /* Drop to PM1 - causes radio packet losses for now */
 
+void
+cc253x_enter_lpm(void);
+
 #ifdef LPM_CONF_MODE
 #define LPM_MODE LPM_CONF_MODE
 #else
