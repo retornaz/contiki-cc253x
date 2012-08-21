@@ -323,12 +323,8 @@ main(void) CC_NON_BANKED
       ENERGEST_IRQ_RESTORE(irq_energest);
 
       /* Go IDLE or Enter PM1 */
-      PCON |= PCON_IDLE;
-
-      /* First instruction upon exiting PM1 must be a NOP */
-      __asm
-        nop
-      __endasm;
+      cc253x_enter_lpm();
+      EA = 1; // We wake up with interrupts disabled, so re-enable them
 
       /* Remember energest IRQ for next pass */
       ENERGEST_IRQ_SAVE(irq_energest);
