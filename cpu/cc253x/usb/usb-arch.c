@@ -135,7 +135,6 @@ struct _USBEndpoint {
 #define USB_EP_FLAGS_TYPE_INTERRUPT 0x03
 
 #define USB_EP_FLAGS_ENABLED 	0x04
-#define USB_EP_FLAGS_DATA_WAITING 0x08
 
 #define EP_TYPE(ep) ((ep)->flags & USB_EP_FLAGS_TYPE_MASK)
 #define IS_EP_TYPE(ep, type) (EP_TYPE(ep) == (type))
@@ -431,15 +430,17 @@ usb_submit_recv_buffer(uint8_t addr, USBBuffer * buffer)
     buffer->flags |= USB_BUFFER_SUBMITTED;
     buffer = buffer->next;
   }
-
-  if(ep->flags & USB_EP_FLAGS_DATA_WAITING) {
-    if(!EP_HW_NUM(ep->addr)) {
+  
+  USBINDEX = EP_HW_NUM(addr);
+  if(!EP_HW_NUM(ep->addr)) {
+    if(USBCS0 & USBCS0_OUTPKT_RDY) {
       usb_arch_ep0_irq();
-    } else {
+    }
+  } else {
+    if(USBCSOL & USBCSOL_OUTPKT_RDY) {
       usb_arch_epout_irq(EP_HW_NUM(ep->addr));
     }
   }
-
   usb_irq_enable(flag);
 }
 
@@ -1099,11 +1100,8 @@ usb_arch_ep0_irq(void)
       notify_ep_process(&usb_endpoints[0], USB_EP_EVENT_NOTIFICATION);
     }
     if(res & USB_READ_BLOCK) {
-      usb_endpoints[0].flags |= USB_EP_FLAGS_DATA_WAITING;
       return;
-    } else {
-      usb_endpoints[0].flags &= ~USB_EP_FLAGS_DATA_WAITING;
-    }
+    } 
   }
   // Trigger the TX path
   res = ep0_tx();
@@ -1228,13 +1226,9 @@ usb_arch_epout_irq(uint8_t ep_hw)
 
   if(csl & USBCSOL_OUTPKT_RDY) {
     res = ep_get_data_pkt(ep_hw);
+    
     if(res & USB_READ_NOTIFY) {
       notify_ep_process(ep, USB_EP_EVENT_NOTIFICATION);
-    }
-    if(res & USB_READ_BLOCK) {
-      ep->flags |= USB_EP_FLAGS_DATA_WAITING;
-    } else {
-      ep->flags &= ~USB_EP_FLAGS_DATA_WAITING;
     }
   }
 }
