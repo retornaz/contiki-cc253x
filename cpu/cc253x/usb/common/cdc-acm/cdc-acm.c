@@ -4,6 +4,12 @@
 #include <usb-core.h>
 #include <stdio.h>
 
+#ifdef DEBUG
+#define PRINTF(...) printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
+#endif
+
 static uint8_t usb_ctrl_data_buffer[32];
 
 static uint8_t usb_line_coding[7] = {0x80, 0x25, 0x00, 0x00, 0x00, 0x00, 0x08}; // 9600 baud, 8N1
@@ -11,7 +17,7 @@ static uint8_t usb_line_coding[7] = {0x80, 0x25, 0x00, 0x00, 0x00, 0x00, 0x08}; 
 static void
 encapsulated_command(uint8_t *data, unsigned int length)
 {
-  printf("Got CDC command: length %d\n", length);
+  PRINTF("Got CDC command: length %d\n", length);
   usb_send_ctrl_status();
 }
 static void
@@ -26,7 +32,7 @@ set_line_encoding(uint8_t *data, unsigned int length)
 		   ? '?' : parity_char[coding->bParityType]);
     const char *stop_bits = ((coding->bCharFormat > 2)
 			     ? "?" : stop_bits_str[coding->bCharFormat]);
-    printf("Got CDC line coding: %ld/%d/%c/%s\n",
+    PRINTF("Got CDC line coding: %ld/%d/%c/%s\n",
 	       coding->dwDTERate, coding->bDataBits, parity, stop_bits);
     memcpy(usb_line_coding, data, 7);
     usb_send_ctrl_status();
@@ -38,7 +44,7 @@ set_line_encoding(uint8_t *data, unsigned int length)
 static unsigned int
 handle_cdc_acm_requests()
 {
-  printf("CDC request %02x %02x\n", usb_setup_buffer.bmRequestType, usb_setup_buffer.bRequest);
+  PRINTF("CDC request %02x %02x\n", usb_setup_buffer.bmRequestType, usb_setup_buffer.bRequest);
   switch(usb_setup_buffer.bmRequestType) {
   case 0x21: /* CDC interface OUT requests */
     /* Check if it's the right interface */
@@ -85,7 +91,7 @@ handle_cdc_acm_requests()
     if (usb_setup_buffer.wIndex != 0) return 0;
     switch(usb_setup_buffer.bRequest) {
     case GET_ENCAPSULATED_RESPONSE:
-      printf("CDC response");
+      PRINTF("CDC response");
       usb_send_ctrl_status();
       return 1;
     case GET_LINE_CODING:
