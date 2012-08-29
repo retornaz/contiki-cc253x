@@ -96,6 +96,9 @@ rtimer_arch_schedule(rtimer_clock_t t)
   T1CCTL1 |= T1CCTL_IM;
 }
 /*---------------------------------------------------------------------------*/
+/* avoid referencing bits, we don't call code which use them */
+#pragma save
+#pragma exclude bits
 void
 rtimer_isr(void) __interrupt(T1_VECTOR)
 {
@@ -111,3 +114,4 @@ rtimer_isr(void) __interrupt(T1_VECTOR)
   ENERGEST_OFF(ENERGEST_TYPE_IRQ);
   T1IE = 1; /* Acknowledge Timer 1 Interrupts */
 }
+#pragma restore

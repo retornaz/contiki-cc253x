@@ -41,6 +41,11 @@ struct cc253x_p2_handler {
   uint8_t (*cb) (void);
 };
 
+/* Warning, the handler must not use the bits register
+ * or must manually save it. SDCC library use it in 
+ * signed integer aritmetic or unsigned division.
+ * You have been warned !
+ */
 void cc253x_p2_register_handler(struct cc253x_p2_handler *h);
 
 void cc253x_p2_unregister_handler(struct cc253x_p2_handler *h);

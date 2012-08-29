@@ -32,6 +32,9 @@ extern void spi_rx_dma_callback(void);
  *
  * if callback defined a poll is made to that process
  */
+/* Avoid referencing bits, we don't call code which use them */
+#pragma save
+#pragma exclude bits
 void
 dma_isr(void) __interrupt (DMA_VECTOR)
 {
@@ -65,4 +68,5 @@ dma_isr(void) __interrupt (DMA_VECTOR)
 #endif
   EA = 1;
 }
+#pragma restore
 /*---------------------------------------------------------------------------*/

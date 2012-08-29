@@ -133,6 +133,9 @@ int configure_b2(int type, int value)
 /*---------------------------------------------------------------------------*/
 /* ISRs */
 /*---------------------------------------------------------------------------*/
+/* avoid referencing bits, we don't call code which use them */
+#pragma save
+#pragma exclude bits
 #if MODEL_CC2531
 void
 port_1_isr(void) __interrupt(P1INT_VECTOR)
@@ -187,6 +190,7 @@ port_0_isr(void) __interrupt(P0INT_VECTOR)
   EA = 1;
 }
 #endif
+#pragma restore
 /*---------------------------------------------------------------------------*/
 SENSORS_SENSOR(button_1_sensor, BUTTON_SENSOR, value_b1, configure_b1, status_b1);
 #if MODEL_CC2531

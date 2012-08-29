@@ -132,6 +132,9 @@ clock_init(void)
   STIE = 1; /* IEN0.STIE interrupt enable */
 }
 /*---------------------------------------------------------------------------*/
+/* avoid referencing bits, we don't call code which use them */
+#pragma save
+#pragma exclude bits
 void
 clock_isr(void) __interrupt(ST_VECTOR)
 {
@@ -177,4 +180,5 @@ clock_isr(void) __interrupt(ST_VECTOR)
   ENERGEST_OFF(ENERGEST_TYPE_IRQ);
   ENABLE_INTERRUPTS();
 }
+#pragma restore
 /*---------------------------------------------------------------------------*/

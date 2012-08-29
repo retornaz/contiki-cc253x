@@ -32,7 +32,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "port2.h"
 
 extern struct cc253x_p2_handler *handlers;
-
+#pragma save
+#pragma exclude bits
 void
 port_2_isr(void) __interrupt(P2INT_VECTOR)
 {
@@ -47,3 +48,5 @@ port_2_isr(void) __interrupt(P2INT_VECTOR)
     P2IF = 0;
   }
 }
+#pragma restore
+
