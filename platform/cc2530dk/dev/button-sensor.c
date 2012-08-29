@@ -36,7 +36,7 @@
 #include "dev/button-sensor.h"
 #include "dev/watchdog.h"
 /*---------------------------------------------------------------------------*/
-static __data struct timer debouncetimer;
+static struct timer debouncetimer;
 /*---------------------------------------------------------------------------*/
 /* Button 1 - SmartRT and cc2531 USb Dongle */
 /*---------------------------------------------------------------------------*/
