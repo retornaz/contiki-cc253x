@@ -12,7 +12,19 @@
 
 static uint8_t usb_ctrl_data_buffer[32];
 
-static uint8_t usb_line_coding[7] = {0x80, 0x25, 0x00, 0x00, 0x00, 0x00, 0x08}; // 9600 baud, 8N1
+static struct usb_cdc_line_coding usb_line_coding = {9600, 0x00, 0x00, 0x08}; // 9600 baud, 8N1
+static uint8_t line_state;
+static uint8_t events;
+static struct process * cdc_event_process = NULL;
+
+static void
+notify_user(uint8_t e)
+{
+  events |= e;
+  if(cdc_event_process) {
+    process_poll(cdc_event_process);
+  }
+}
 
 static void
 encapsulated_command(uint8_t *data, unsigned int length)
@@ -24,6 +36,7 @@ static void
 set_line_encoding(uint8_t *data, unsigned int length)
 {
   if (length == 7) {
+#ifdef DEBUG
     static const char parity_char[] = {'N', 'O', 'E', 'M', 'S'};
     static const char *stop_bits_str[] = {"1","1.5","2"};
     const struct usb_cdc_line_coding *coding =
@@ -34,7 +47,9 @@ set_line_encoding(uint8_t *data, unsigned int length)
 			     ? "?" : stop_bits_str[coding->bCharFormat]);
     PRINTF("Got CDC line coding: %ld/%d/%c/%s\n",
 	       coding->dwDTERate, coding->bDataBits, parity, stop_bits);
-    memcpy(usb_line_coding, data, 7);
+#endif
+    memcpy(&usb_line_coding, data, sizeof(usb_line_coding));
+    notify_user(USB_CDC_ACM_LINE_CODING);
     usb_send_ctrl_status();
   } else {
     usb_error_stall();
@@ -51,16 +66,8 @@ handle_cdc_acm_requests()
     if (usb_setup_buffer.wIndex != 0) return 0;
     switch(usb_setup_buffer.bRequest) {
     case SET_CONTROL_LINE_STATE:
-      if (usb_setup_buffer.wValue & 0x02) {
-	puts("Carrier on");
-      } else {
-	puts("Carrier off");
-      }
-      if (usb_setup_buffer.wValue & 0x01) {
-	puts("DTE on");
-      } else {
-	puts("DTE off");
-      }
+      line_state = usb_setup_buffer.wValue;
+      notify_user(USB_CDC_ACM_LINE_STATE);
       usb_send_ctrl_status();
       return 1;
 
@@ -95,7 +102,7 @@ handle_cdc_acm_requests()
       usb_send_ctrl_status();
       return 1;
     case GET_LINE_CODING:
-      usb_send_ctrl_response(usb_line_coding, 7);
+      usb_send_ctrl_response((uint8_t *) &usb_line_coding, 7);
       return 1;
     }
   }
@@ -120,3 +127,30 @@ usb_cdc_acm_setup()
 {
   usb_register_request_handler(&cdc_acm_request_hook);
 }
+
+uint8_t
+usb_cdc_acm_get_events(void)
+{
+  uint8_t r = events;
+  events = 0;
+  return r;
+}
+
+uint8_t
+usb_cdc_acm_get_line_state(void)
+{
+  return line_state;
+}
+
+const struct usb_cdc_line_coding *
+usb_cdc_acm_get_line_coding(void)
+{
+  return &usb_line_coding;
+}
+
+void
+usb_cdc_acm_set_event_process(struct process *p)
+{
+  cdc_event_process = p;
+}
+
