@@ -49,7 +49,7 @@
 #define LPM_MODE_PM2  2 /* Drop to PM1 - causes radio packet losses for now */
 
 void
-cc253x_enter_lpm(void);
+cc253x_enter_lpm(void) __nonbanked;
 
 #ifdef LPM_CONF_MODE
 #define LPM_MODE LPM_CONF_MODE

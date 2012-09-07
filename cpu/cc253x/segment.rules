@@ -20,3 +20,4 @@
 HOME intr.c   # Match all files ending in intr.c (e.g. uart-intr.c)
 HOME rtimer-arch.c
 HOME clock.c
+HOME lpm.c
